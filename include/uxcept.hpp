@@ -64,12 +64,11 @@ namespace uxcept {
         detail::Node node;
         if (!setjmp(node.buffer)) {
             inTry();
-            node.pop_front();
+            detail::Node::pop_front();
         }
         else {
-            auto* n = node.front();
-            node.pop_front();
-            inCatch(n->error);
+            detail::Node::pop_front();
+            inCatch(node.error);
         }
     }
 
