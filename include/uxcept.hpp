@@ -53,7 +53,7 @@ namespace uxcept {
 
         private:
             Node* mNext = nullptr;
-            inline static Node* startNode;
+            thread_local inline static Node* startNode;
         };
 
     }
