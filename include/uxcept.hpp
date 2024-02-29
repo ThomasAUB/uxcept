@@ -30,15 +30,12 @@ namespace uxcept {
                 exitAtomic();
             }
 
-            static Node* pop_front() {
-                Node* out = nullptr;
+            static void pop_front() {
                 enterAtomic();
                 if (startNode) {
-                    out = startNode;
                     startNode = startNode->mNext;
                 }
                 exitAtomic();
-                return out;
             }
 
             static Node* front() {
