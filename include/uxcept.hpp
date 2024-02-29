@@ -5,36 +5,39 @@
 
 namespace uxcept {
 
-
     template<typename try_t, typename catch_t>
     void tryCatch(try_t&& inTry, catch_t&& inCatch);
 
     void raise(std::string_view inError);
 
+    namespace conf {
+        void setEnterAtomic(void(*f)());
+        void setExitAtomic(void(*f)());
+    }
 
     namespace detail {
 
-        struct Node {
+        class Node {
+            static void empty() {}
+        public:
 
             Node() {
-                // ===== atomic ===== //
+                enterAtomic();
                 if (startNode) {
-                    mNext = startNode->mNext;
+                    mNext = startNode;
                 }
                 startNode = this;
-                // ================== //
-            }
-
-            ~Node() {
-                pop_front();
+                exitAtomic();
             }
 
             static Node* pop_front() {
-                if (!startNode) {
-                    return nullptr;
+                Node* out = nullptr;
+                enterAtomic();
+                if (startNode) {
+                    out = startNode;
+                    startNode = startNode->mNext;
                 }
-                Node* out = startNode;
-                startNode = startNode->mNext;
+                exitAtomic();
                 return out;
             }
 
@@ -42,8 +45,12 @@ namespace uxcept {
                 return startNode;
             }
 
+            inline static void(*enterAtomic)() = empty;
+            inline static void(*exitAtomic)() = empty;
+
             jmp_buf buffer;
             std::string_view error;
+
         private:
             Node* mNext = nullptr;
             inline static Node* startNode;
@@ -73,46 +80,16 @@ namespace uxcept {
         }
     }
 
+    namespace conf {
 
-
-    //namespace detail {
-/*
-    struct Node {
-
-        Node() {
-            // ===== atomic ===== //
-            if (startNode) {
-                mNext = startNode->mNext;
-            }
-            startNode = this;
-            // ================== //
+        inline void setEnterAtomic(void(*f)()) {
+            detail::Node::enterAtomic = f;
         }
 
-        ~Node() {
-            pop_front();
+        inline void setExitAtomic(void(*f)()) {
+            detail::Node::exitAtomic = f;
         }
 
-        static Node* pop_front() {
-            if (!startNode) {
-                return nullptr;
-            }
-            Node* out = startNode;
-            startNode = startNode->mNext;
-            return out;
-        }
-
-        static Node* front() {
-            return startNode;
-        }
-
-        jmp_buf buffer;
-        std::string_view error;
-    private:
-        Node* mNext = nullptr;
-        inline static Node* startNode;
-    };
-*/
-//}
-
+    }
 
 }
