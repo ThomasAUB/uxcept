@@ -20,7 +20,6 @@ void recursiveCheck(int v) {
                 recursiveCheck(v - 1);
 
                 if (v == 2) {
-                    std::cout << "v == 2" << std::endl;
                     uxcept::raise("error : v equals 2 on exit");
                 }
 

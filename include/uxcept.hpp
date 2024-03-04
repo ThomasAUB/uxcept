@@ -18,14 +18,12 @@ namespace uxcept {
     namespace detail {
 
         class Node {
-            static void empty() {}
+            static constexpr void empty() {}
         public:
 
             Node() {
                 enterAtomic();
-                if (startNode) {
-                    mNext = startNode;
-                }
+                mNext = startNode;
                 startNode = this;
                 exitAtomic();
             }
@@ -42,13 +40,32 @@ namespace uxcept {
                 return startNode;
             }
 
-            inline static void(*enterAtomic)() = empty;
-            inline static void(*exitAtomic)() = empty;
+            static void setEnterAtomic(void(*f)()) {
+                if (f) {
+                    enterAtomic = f;
+                }
+                else {
+                    enterAtomic = empty;
+                }
+            }
+
+            static void setExitAtomic(void(*f)()) {
+                if (f) {
+                    exitAtomic = f;
+                }
+                else {
+                    exitAtomic = empty;
+                }
+            }
 
             jmp_buf buffer;
             std::string_view error;
 
         private:
+
+            inline static void(*enterAtomic)() = empty;
+            inline static void(*exitAtomic)() = empty;
+
             Node* mNext = nullptr;
             thread_local inline static Node* startNode;
         };
@@ -58,6 +75,7 @@ namespace uxcept {
 
     template<typename try_t, typename catch_t>
     void tryCatch(try_t&& inTry, catch_t&& inCatch) {
+#if !defined(UEXCEPT_HARD_FAIL)
         detail::Node node;
         if (!setjmp(node.buffer)) {
             inTry();
@@ -67,6 +85,7 @@ namespace uxcept {
             detail::Node::pop_front();
             inCatch(node.error);
         }
+#endif
     }
 
     inline void raise(std::string_view inError) {
@@ -74,16 +93,19 @@ namespace uxcept {
             n->error = inError;
             longjmp(n->buffer, 1);
         }
+        else {
+            while (true);
+        }
     }
 
     namespace conf {
 
         inline void setEnterAtomic(void(*f)()) {
-            detail::Node::enterAtomic = f;
+            detail::Node::setEnterAtomic(f);
         }
 
         inline void setExitAtomic(void(*f)()) {
-            detail::Node::exitAtomic = f;
+            detail::Node::setExitAtomic(f);
         }
 
     }
