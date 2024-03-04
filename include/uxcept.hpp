@@ -1,14 +1,14 @@
 #pragma once
 
 #include <csetjmp>
-#include <string_view>
+#include "uxcept_error_type.hpp"
 
 namespace uxcept {
 
     template<typename try_t, typename catch_t>
     void tryCatch(try_t&& inTry, catch_t&& inCatch);
 
-    void raise(std::string_view inError);
+    void raise(error_t inError);
 
     namespace conf {
         void setEnterAtomic(void(*f)());
@@ -59,7 +59,7 @@ namespace uxcept {
             }
 
             jmp_buf buffer;
-            std::string_view error;
+            error_t error;
 
         private:
 
@@ -88,7 +88,7 @@ namespace uxcept {
 #endif
     }
 
-    inline void raise(std::string_view inError) {
+    inline void raise(error_t inError) {
         if (auto* n = detail::Node::front()) {
             n->error = inError;
             longjmp(n->buffer, 1);
