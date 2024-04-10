@@ -1,7 +1,19 @@
 #pragma once
 
 #include <csetjmp>
+
+#if __has_include("uxcept_error_type.hpp")
+
 #include "uxcept_error_type.hpp"
+
+#else
+
+#include <string_view>
+namespace uxcept {
+    using error_t = std::string_view;
+}
+
+#endif
 
 namespace uxcept {
 
