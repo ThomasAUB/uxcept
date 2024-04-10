@@ -22,6 +22,8 @@ namespace uxcept {
 
     void raise(error_t inError);
 
+    void assert(bool inCondition, error_t inError);
+
     namespace conf {
         void setEnterAtomic(void(*f)());
         void setExitAtomic(void(*f)());
@@ -106,7 +108,14 @@ namespace uxcept {
             longjmp(n->buffer, 1);
         }
         else {
-            while (true);
+            // no try-catch found
+            //while (true);
+        }
+    }
+
+    inline void assert(bool inCondition, error_t inError) {
+        if (!inCondition) {
+            raise(inError);
         }
     }
 
