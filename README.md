@@ -1,4 +1,5 @@
 ![build status](https://github.com/ThomasAUB/uxcept/actions/workflows/build.yml/badge.svg)
+[![License](https://img.shields.io/github/license/ThomasAUB/uxcept)](LICENSE)
 
 # uXcept
 
