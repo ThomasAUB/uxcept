@@ -1,3 +1,5 @@
+![build status](https://github.com/ThomasAUB/uxcept/actions/workflows/build.yml/badge.svg)
+
 # uXcept
 
 Lighweight C++ exception library for microcontrollers.
