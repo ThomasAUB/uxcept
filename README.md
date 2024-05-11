@@ -3,7 +3,11 @@
 
 # uXcept
 
-Lighweight C++ exception library for microcontrollers.
+Lighweight C++17 exception library for microcontrollers.
+
+- single-header
+- no heap allocation
+- platform independent
 
 ## Example
 
@@ -17,7 +21,7 @@ void mayFail(uint8_t i, int val) {
     buffer[i] = val;
 }
 
-in main() {
+int main() {
 
     uxcept::tryCatch(
         [&] () {
@@ -36,9 +40,11 @@ in main() {
 
 An error can also be raised using **uxcept::raise(error)**.
 
+## Custom error type
+
 Note that it's possible to change the error type that is defaulted to std::string_view. For that, you only need to create a file called "uxcept_error_type.hpp" and define the error type with an alias.
 
 ```cpp
 // uxcept_error_type.hpp
-using error_type = int;
+namespace uxcept { using error_type = int; }
 ```
