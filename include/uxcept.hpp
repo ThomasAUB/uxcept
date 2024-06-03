@@ -68,18 +68,12 @@ namespace uxcept {
     namespace conf {
 
         /**
-         * @brief Set the function to be called to enter a critical section.
+         * @brief Set the Atomic object
          *
-         * @param f Pointer to the function to be called.
+         * @param inEnterAtomic Enter atomic function pointer.
+         * @param inExitAtomic Exit atomic function pointer.
          */
-        void setEnterAtomic(void(*f)());
-
-        /**
-         * @brief Set the function to be called to exit a critical section.
-         *
-         * @param f Pointer to the function to be called.
-         */
-        void setExitAtomic(void(*f)());
+        void setAtomic(void(*inEnterAtomic)(), void(*inExitAtomic)());
 
         /**
          * @brief Set the error handler to call when no catch function
@@ -152,17 +146,17 @@ namespace uxcept {
                 }
             }
 
-            jmp_buf buffer;
-            error_t error;
+            jmp_buf buffer {};
+            error_t error = error_t();
 
         private:
 
             inline static void(*enterAtomic)() = empty;
             inline static void(*exitAtomic)() = empty;
-            inline static void(*defaultErrorHandler)(error_t) = empty;
+            thread_local inline static void(*defaultErrorHandler)(error_t) = empty;
+            thread_local inline static Node* startNode = nullptr;
 
             Node* mNext = nullptr;
-            thread_local inline static Node* startNode;
         };
 
     }
@@ -170,7 +164,6 @@ namespace uxcept {
 
     template<typename try_t, typename catch_t>
     void tryCatch(try_t&& inTry, catch_t&& inCatch) {
-#if !defined(UEXCEPT_HARD_FAIL)
         detail::Node node;
         if (!setjmp(node.buffer)) {
             inTry();
@@ -180,7 +173,6 @@ namespace uxcept {
             detail::Node::pop_front();
             inCatch(node.error);
         }
-#endif
     }
 
     inline void raise(error_t inError) {
@@ -202,12 +194,9 @@ namespace uxcept {
 
     namespace conf {
 
-        inline void setEnterAtomic(void(*f)()) {
-            detail::Node::setEnterAtomic(f);
-        }
-
-        inline void setExitAtomic(void(*f)()) {
-            detail::Node::setExitAtomic(f);
+        inline void setAtomic(void(*inEnterAtomic)(), void(*inExitAtomic)()) {
+            detail::Node::setEnterAtomic(inEnterAtomic);
+            detail::Node::setExitAtomic(inExitAtomic);
         }
 
         inline void setDefaultErrorHandler(void(*f)(error_t)) {
