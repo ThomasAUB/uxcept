@@ -63,7 +63,7 @@ namespace uxcept {
      * @param inCondition Condition to assert.
      * @param inError Error raised if the condition was false.
      */
-    void assert(bool inCondition, error_t inError);
+    void check(bool inCondition, error_t inError);
 
     namespace conf {
 
@@ -186,7 +186,7 @@ namespace uxcept {
         }
     }
 
-    inline void assert(bool inCondition, error_t inError) {
+    inline void check(bool inCondition, error_t inError) {
         if (!inCondition) {
             raise(inError);
         }
