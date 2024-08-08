@@ -17,7 +17,7 @@ Lighweight C++17 exception library for microcontrollers.
 int buffer[3];
 
 void mayFail(uint8_t i, int val) {
-    uxcept::assert(i < 3, "invalid index");
+    uxcept::check(i < 3, "invalid index");
     buffer[i] = val;
 }
 
