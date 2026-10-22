@@ -48,3 +48,23 @@ Note that it's possible to change the error type that is defaulted to std::strin
 // uxcept_error_type.hpp
 namespace uxcept { using error_type = int; }
 ```
+
+## Contexts
+
+- On hosted builds, every thread has its own try blocks : an error raised in
+  a thread is caught by that thread's innermost try block.
+- On Cortex-M cores, the thread mode and the interrupt handlers share the try
+  blocks, which are opened and closed with interrupts masked through
+  [uatom](https://github.com/ThomasAUB/uatom)'s `CriticalSection`. An error
+  must be caught by the context that raised it : a handler must not raise
+  outside of its own try blocks, nor return with one still open.
+
+## CMake
+
+uatom is a submodule : clone with `--recursive`, or run
+`git submodule update --init --recursive`.
+
+```cmake
+add_subdirectory(uxcept)
+target_link_libraries(my_target uxcept)
+```

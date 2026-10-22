@@ -29,6 +29,20 @@
 
 #include <csetjmp>
 
+ // On M-profile cores (same detection as uatom), every context shares one
+ // list of try blocks : interrupt handlers nest, so their try blocks always
+ // close in the reverse order they opened, and pushing or popping one under
+ // uatom::CriticalSection is enough. Hosted builds keep one list per thread,
+ // which no other thread touches. thread_local is avoided on bare metal, where
+ // GCC emulates it through __emutls_get_address(), which allocates on first
+ // access.
+#if defined(__ARM_ARCH_PROFILE) && (__ARM_ARCH_PROFILE == 'M')
+#define UXCEPT_DETAIL_SHARED_LIST 1
+#include "uatom.hpp"
+#else
+#define UXCEPT_DETAIL_SHARED_LIST 0
+#endif
+
 #if __has_include("uxcept_error_type.hpp")
 #include "uxcept_error_type.hpp"
 #else
@@ -68,14 +82,6 @@ namespace uxcept {
     namespace conf {
 
         /**
-         * @brief Set the Atomic object
-         *
-         * @param inEnterAtomic Enter atomic function pointer.
-         * @param inExitAtomic Exit atomic function pointer.
-         */
-        void setAtomic(void(*inEnterAtomic)(), void(*inExitAtomic)());
-
-        /**
          * @brief Set the error handler to call when no catch function
          * have been found.
          *
@@ -86,29 +92,31 @@ namespace uxcept {
     }
 
 
-
-
-
     namespace detail {
 
+#if UXCEPT_DETAIL_SHARED_LIST
+        using ListGuard = uatom::CriticalSection;
+#define UXCEPT_DETAIL_STORAGE
+#else
+        struct ListGuard final {};
+#define UXCEPT_DETAIL_STORAGE thread_local
+#endif
+
         class Node {
-            static constexpr void empty() {}
             static constexpr void empty(error_t) {}
         public:
 
             Node() {
-                enterAtomic();
+                [[maybe_unused]] const ListGuard guard;
                 mNext = startNode;
                 startNode = this;
-                exitAtomic();
             }
 
             static void pop_front() {
-                enterAtomic();
+                [[maybe_unused]] const ListGuard guard;
                 if (startNode) {
                     startNode = startNode->mNext;
                 }
-                exitAtomic();
             }
 
             static Node* front() {
@@ -117,24 +125,6 @@ namespace uxcept {
 
             static void errorHandler(error_t e) {
                 defaultErrorHandler(e);
-            }
-
-            static void setEnterAtomic(void(*f)()) {
-                if (f) {
-                    enterAtomic = f;
-                }
-                else {
-                    enterAtomic = empty;
-                }
-            }
-
-            static void setExitAtomic(void(*f)()) {
-                if (f) {
-                    exitAtomic = f;
-                }
-                else {
-                    exitAtomic = empty;
-                }
             }
 
             static void setDefaultErrorHandler(void(*f)(error_t)) {
@@ -151,13 +141,13 @@ namespace uxcept {
 
         private:
 
-            inline static void(*enterAtomic)() = empty;
-            inline static void(*exitAtomic)() = empty;
-            thread_local inline static void(*defaultErrorHandler)(error_t) = empty;
-            thread_local inline static Node* startNode = nullptr;
+            UXCEPT_DETAIL_STORAGE inline static void(*defaultErrorHandler)(error_t) = empty;
+            UXCEPT_DETAIL_STORAGE inline static Node* startNode = nullptr;
 
             Node* mNext = nullptr;
         };
+
+#undef UXCEPT_DETAIL_STORAGE
 
     }
 
@@ -193,11 +183,6 @@ namespace uxcept {
     }
 
     namespace conf {
-
-        inline void setAtomic(void(*inEnterAtomic)(), void(*inExitAtomic)()) {
-            detail::Node::setEnterAtomic(inEnterAtomic);
-            detail::Node::setExitAtomic(inExitAtomic);
-        }
 
         inline void setDefaultErrorHandler(void(*f)(error_t)) {
             detail::Node::setDefaultErrorHandler(f);

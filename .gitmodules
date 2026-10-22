@@ -1,0 +1,3 @@
+[submodule "uatom"]
+	path = uatom
+	url = https://github.com/ThomasAUB/uatom.git
